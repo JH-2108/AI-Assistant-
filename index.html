@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title style="color: #ffffff;">Jarvis</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --panel: rgba(20, 20, 20, 0.95);
+            --panel-strong: rgba(40, 40, 40, 0.98);
+            --text: #ffffff;
+            --muted: #888888;
+            --accent: #ffffff;
+            --accent-2: #555555;
+            --border: rgba(255, 255, 255, 0.1);
+            --user: rgba(100, 200, 255, 0.1);
+            --assistant: rgba(100, 200, 255, 0.1);
+            --shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            display: grid;
+            place-items: center;
+            padding: 20px;
+        }
+
+        .app {
+            width: min(980px, 100%);
+            min-height: min(760px, 92vh);
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 18px;
+            padding: 22px;
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            background: var(--panel);
+            backdrop-filter: blur(18px);
+            box-shadow: var(--shadow);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 6px 4px 0;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text);
+        }
+
+        .brand p {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        .live-time {
+            margin: 8px 0 0;
+            color: var(--accent);
+            font-size: 0.92rem;
+            letter-spacing: 0.04em;
+        }
+
+        .status {
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: rgba(17, 1, 90, 0.663);
+            color: var(--accent);
+            font-size: 0.92rem;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            max-width: 240px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .toggle-group {
+            display: inline-flex;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .toggle {
+            border: 0;
+            background: transparent;
+            color: var(--muted);
+            padding: 10px 14px;
+            cursor: pointer;
+            font: inherit;
+            transition: all 0.2s;
+        }
+
+        .toggle.active {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .camera-button {
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--muted);
+            font-size: 0.92rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .camera-button.active {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .chat {
+            overflow: auto;
+            padding: 8px 4px 8px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .message {
+            max-width: min(78ch, 85%);
+            padding: 14px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--user);
+            border-bottom-right-radius: 8px;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background: var(--assistant);
+            border-bottom-left-radius: 8px;
+        }
+
+        .response-time {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-left: 8px;
+            opacity: 0.7;
+        }
+
+        .composer {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        .composer.voice-mode {
+            grid-template-columns: auto 1fr auto auto;
+        }
+
+        .composer input[type="file"] {
+            display: none;
+        }
+
+        .add-file {
+            width: 68px;
+            height: 68px;
+            display: grid;
+            place-items: center;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--panel-strong);
+            color: var(--text);
+            font-size: 2rem;
+            line-height: 1;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .file-meta {
+            font-size: 0.88rem;
+            color: var(--muted);
+            margin-top: 10px;
+        }
+
+        .composer textarea {
+            width: 100%;
+            min-height: 68px;
+            max-height: 220px;
+            resize: vertical;
+            padding: 16px 18px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--panel-strong);
+            color: var(--text);
+            font: inherit;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .composer textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(96, 63, 141, 0.3);
+        }
+
+        .composer button {
+            height: 68px;
+            min-width: 68px;
+            border: 0;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+            color: var(--bg);
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .composer button:disabled {
+            cursor: wait;
+            opacity: 0.7;
+        }
+
+        .voice-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 68px;
+            height: 68px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .voice-button.listening {
+            background: var(--accent);
+            color: var(--bg);
+            box-shadow: 0 0 0 4px rgba(96, 63, 141, 0.18);
+        }
+
+        .tips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .tip {
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.05);
+            font-size: 0.88rem;
+        }
+
+        .cad-panel {
+            margin-top: 16px;
+            padding: 18px;
+            border-radius: 22px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.05);
+            display: none;
+            gap: 14px;
+        }
+
+        .cad-panel.visible {
+            display: grid;
+        }
+
+        .cad-panel h2 {
+            margin: 0;
+            font-size: 1rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .cad-panel p {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        .cad-toolbar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .cad-toolbar button {
+            min-width: 0;
+            height: auto;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 0.92rem;
+            border: 1px solid #8b5fbf;
+            background: #603f8d;
+            color: #ffffff;
+            cursor: pointer;
+            font: inherit;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .cad-toolbar a.primary {
+            background: linear-gradient(135deg, #603f8d 0%, #8b5fbf 100%);
+            color: #ffffff;
+            border: 1px solid #8b5fbf;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(139, 95, 191, 0.3);
+        }
+
+        .cad-output {
+            min-height: 280px;
+            width: 100%;
+            resize: vertical;
+            padding: 16px 18px;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: var(--panel-strong);
+            color: var(--text);
+            font: 0.95rem/1.45 Consolas, "Courier New", monospace;
+            outline: none;
+        }
+
+        .cad-meta {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .cad-stl-panel {
+            margin-top: 16px;
+            padding: 18px;
+            border-radius: 22px;
+            border: 1px solid var(--border);
+            background: rgba(14, 40, 52, 0.55);
+            display: none;
+            gap: 12px;
+        }
+
+        .cad-stl-panel.visible {
+            display: grid;
+        }
+
+        .cad-stl-panel h2 {
+            margin: 0;
+            font-size: 1rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .cad-stl-panel p {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        .cad-stl-toolbar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .cad-stl-toolbar a,
+        .cad-stl-toolbar button {
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 0.92rem;
+            cursor: pointer;
+            font: inherit;
+            text-decoration: none;
+            border: 1px solid var(--accent);
+            background: var(--accent-2);
+            color: var(--bg);
+            transition: all 0.2s;
+        }
+
+        .cad-stl-toolbar a.primary {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+            color: var(--bg);
+            border: 0;
+            font-weight: 600;
+        }
+
+        .cad-stl-view {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            max-height: 420px;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: #020810;
+        }
+
+        .cad-stl-view canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hand3d-panel {
+            margin-top: 16px;
+            padding: 18px;
+            border-radius: 22px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.05);
+            display: none;
+            gap: 14px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            align-items: stretch;
+            overflow: hidden;
+        }
+
+        .hand3d-panel.visible {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hand3d-view {
+            position: relative;
+            width: 100%;
+            min-width: 0;
+            aspect-ratio: 16 / 10;
+            max-height: 420px;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: #020810;
+        }
+
+        .hand3d-panel h2 {
+            margin: 0;
+            font-size: 1rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .hand3d-panel p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.45;
+        }
+
+        .hand3d-toolbar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .hand3d-toolbar button {
+            min-width: 0;
+            height: auto;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 0.92rem;
+            border: 1px solid rgba(96, 63, 141, 0.5);
+            background: rgba(96, 63, 141, 0.3);
+            color: #ffffff;
+            cursor: pointer;
+            font: inherit;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .hand3d-toolbar button.primary {
+            background: linear-gradient(135deg, #603f8d 0%, #8b5fbf 100%);
+            color: #ffffff;
+            border: 1px solid #8b5fbf;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(139, 95, 191, 0.3);
+        }
+
+        .hand3d-toolbar button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .hand3d-view {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            max-height: 420px;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: #020810;
+        }
+
+        .hand3d-view video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        .hand3d-view canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .hand3d-hint {
+            font-size: 0.88rem;
+            color: var(--accent);
+        }
+
+        @media (max-width: 720px) {
+            .app {
+                min-height: 100vh;
+                border-radius: 0;
+                padding: 18px;
+            }
+
+            body {
+                padding: 0;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .composer {
+                grid-template-columns: 1fr;
+            }
+
+            .composer button {
+                width: 100%;
+            }
+
+            .message {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="app">
+        <section class="header">
+            <div class="brand">
+                <h1>Jarvis</h1>
+                <p>⚡ Lightning-fast AI assistant</p>
+                <div class="live-time" id="liveTime">--:--:--</div>
+            </div>
+            <div class="controls">
+                <button class="camera-button" id="cameraButton" type="button">👁️ Camera Off</button>
+                <button class="camera-button" id="hand3dButton" type="button" title="Sculpt with hand tracking">✋ Hand 3D</button>
+                <div class="status" id="status">Checking connection...</div>
+            </div>
+        </section>
+
+        <section class="chat" id="chat">
+            <div class="message assistant">⚡ Jarvis online! I respond in 1-2 seconds maximum. Type "voice" for voice mode, "text" for text mode. I'm optimized for speed!</div>
+        </section>
+
+        <section>
+            <form class="composer" id="composer">
+                <label class="add-file" for="fileInput" title="Add file for analysis">+</label>
+                <input id="fileInput" type="file" accept=".py,.js,.ts,.tsx,.jsx,.html,.css,.json,.md,.txt,.yml,.yaml,.xml,.csv,.ini,.cfg,.pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.jpg,.jpeg,.png,.gif,.bmp,.webp,.tiff">
+                <textarea id="command" placeholder="Lightning-fast command input..."></textarea>
+                <button id="send" type="submit" title="Send">⚡</button>
+                <button class="voice-button" id="voiceInputButton" type="button" title="Speak to Jarvis" style="display: none;">🎤</button>
+            </form>
+            <div class="file-meta" id="fileMeta">No file selected.</div>
+            <div class="tips">
+                <div class="tip">⚡ open roblox</div>
+                <div class="tip">🎤 voice commands available</div>
+                <div class="tip">📋 analyze PDFs, DOCX, images, code</div>
+                <div class="tip">🎨 design 3D models</div>
+            </div>
+        </section>
+
+        <section class="cad-panel" id="cadPanel">
+            <h2>⚡ CAD assistant</h2>
+            <p id="cadSummary">Ask for a 3D design in chat. OpenSCAD code appears below; a separate STL preview panel opens when OpenSCAD can compile to mesh on this PC.</p>
+            <div class="cad-toolbar">
+                <div class="cad-meta" id="cadFilename">No CAD file yet.</div>
+                <button id="downloadCadButton" type="button">Download .scad</button>
+                <button id="closeCadButton" type="button">Close</button>
+            </div>
+            <textarea class="cad-output" id="cadOutput" spellcheck="false" placeholder="Generated CAD code will appear here..."></textarea>
+        </section>
+
+        <section class="cad-stl-panel" id="cadStlPanel" aria-label="STL 3D preview">
+            <h2>⚡ STL preview</h2>
+            <p class="cad-meta" id="cadStlHint">Mesh is compiled from the OpenSCAD above with OpenSCAD on this computer. Drag to orbit, scroll to zoom.</p>
+            <p class="hand3d-hint" id="cadStlStatus"></p>
+            <div class="cad-stl-toolbar">
+                <a class="primary" id="cadStlDownload" href="#" download="model.stl" style="display: none;">Download .stl</a>
+                <button type="button" id="closeCadStlButton">Close preview</button>
+            </div>
+            <div class="cad-stl-view" id="cadStlView">
+                <canvas id="cadStlCanvas"></canvas>
+            </div>
+        </section>
+
+        <section class="hand3d-panel" id="hand3dPanel">
+            <h2>⚡ Hand 3D studio</h2>
+            <p><strong>Right hand:</strong> pinch thumb and index together to draw a continuous line by pulling the hand. Release to lock the segment. <strong>Left hand:</strong> move an open palm to rotate the sketch; pinch thumb and index closer or farther apart to zoom.</p>
+            <p class="hand3d-hint" id="hand3dStatus">Camera off. Press Start to begin.</p>
+            <div class="hand3d-toolbar">
+                <button class="primary" id="hand3dStart" type="button">Start camera &amp; tracking</button>
+                <button id="hand3dStop" type="button" disabled>Stop</button>
+                <button id="hand3dCloseLoop" type="button" disabled>Close loop</button>
+                <button id="hand3dClear" type="button" disabled>Clear all</button>
+                <button id="hand3dClose" type="button">Close panel</button>
+            </div>
+            <div class="hand3d-view" id="hand3dView">
+                <video id="handVideo" playsinline muted></video>
+                <canvas id="handCanvas"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const chat = document.getElementById("chat");
+        const form = document.getElementById("composer");
+        const input = document.getElementById("command");
+        const sendButton = document.getElementById("send");
+        const statusEl = document.getElementById("status");
+        const liveTime = document.getElementById("liveTime");
+        const fileInput = document.getElementById("fileInput");
+        const fileMeta = document.getElementById("fileMeta");
+        const voiceInputButton = document.getElementById("voiceInputButton");
+        const cameraButton = document.getElementById("cameraButton");
+        let selectedFile = null;
+        let interactionMode = "text";
+        let recognition = null;
+        let listening = false;
+        let cameraEnabled = false;
+        let currentCadFile = "design.scad";
+        let responseStartTime = null;
+        
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        function addMessage(role, text, responseTime = null) {
+            const el = document.createElement("div");
+            el.className = `message ${role}`;
+            
+            let content = text;
+            if (responseTime) {
+                const responseMs = responseTime;
+                content += `<span class="response-time">${responseMs}ms</span>`;
+            }
+            
+            el.innerHTML = content;
+            chat.appendChild(el);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function setInteractionMode(mode) {
+            interactionMode = mode;
+            const voiceEnabled = mode === "voice";
+            
+            // Update placeholder based on mode
+            if (voiceEnabled) {
+                input.placeholder = "Click mic button to speak...";
+                voiceInputButton.style.display = "block";
+            } else {
+                input.placeholder = "Type a command for Jarvis...";
+                voiceInputButton.style.display = "none";
+            }
+        }
+
+        function speakText(text) {
+            if (interactionMode !== "voice" || !("speechSynthesis" in window)) {
+                return;
+            }
+
+            if (recognition && listening) {
+                recognition.stop(); // Stop listening while Jarvis is speaking
+            }
+
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.3; // Faster speech
+            utterance.pitch = 1.1; // Higher pitch for enthusiasm
+            utterance.volume = 0.95;
+
+            utterance.onend = () => {
+                if (interactionMode === "voice" && recognition && !listening) {
+                    setTimeout(() => {
+                        if (!listening && interactionMode === "voice") {
+                            try { recognition.start(); } catch (e) {}
+                        }
+                    }, 300);
+                }
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function setListeningState(isListening) {
+            listening = isListening;
+            voiceInputButton.classList.toggle("listening", isListening);
+            voiceInputButton.textContent = isListening ? "🎙️" : "🎤";
+            voiceInputButton.title = isListening ? "Listening... click to stop" : "Speak to Jarvis";
+            statusEl.textContent = isListening ? "Listening for speech..." : "Jarvis connected";
+        }
+
+        async function submitCommand(command) {
+            // Check for voice/text mode commands
+            if (command.toLowerCase() === "voice") {
+                addMessage("user", command);
+                input.value = "";
+                setInteractionMode("voice");
+                addMessage("assistant", " Voice mode activated! I will now speak my responses aloud.");
+                return;
+            }
+            if (command.toLowerCase() === "text") {
+                addMessage("user", command);
+                input.value = "";
+                setInteractionMode("text");
+                addMessage("assistant", " Text mode activated! I will now display responses as text only.");
+                return;
+            }
+
+            responseStartTime = Date.now();
+            
+            let userMessageHTML = command || "<i>Uploaded a file</i>";
+            let activeFile = selectedFile;
+            let fileContent = null;
+            
+            if (activeFile) {
+                userMessageHTML += `<br><small style="opacity: 0.8;">📄 ${activeFile.name}</small>`;
+            }
+            
+            addMessage("user", userMessageHTML);
+            input.value = "";
+            sendButton.disabled = true;
+            voiceInputButton.disabled = true;
+            statusEl.textContent = " Jarvis thinking...";
+
+            try {
+                let response;
+                
+                if (activeFile) {
+                    let payload = {
+                        filename: activeFile.name,
+                        request: command,
+                    };
+                    
+                    // Always send binary file data for any selected file
+                    const base64Data = await readFileAsBase64(activeFile);
+                    payload.file_data = base64Data;
+
+                    // If the file is a text file, also send its plain text content for faster processing
+                    const isBinary = isBinaryFile(activeFile.name) || activeFile.type.startsWith("application/") || activeFile.type.startsWith("image/");
+                    if (!isBinary) {
+                        fileContent = await readFileAsText(activeFile);
+                        payload.content = fileContent;
+                    }
+                    
+                    // Clear file input from UI immediately after reading
+                    selectedFile = null;
+                    document.getElementById("fileInput").value = "";
+                    document.getElementById("fileMeta").textContent = "No file selected.";
+                    
+                    response = await fetch("/api/review-file", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    });
+                } else {
+                    response = await fetch("/api/command", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            command,
+                            fast_mode: true, // Enable fast mode
+                            use_vision: cameraEnabled,
+                        }),
+                    });
+                }
+
+                const data = await response.json();
+                const responseTime = Date.now() - responseStartTime;
+                
+                let message = data.response || data.error || "No response.";
+                if (data.error) {
+                    message = ` Error: ${message}`;
+                }
+                
+                addMessage("assistant", message, responseTime);
+                speakText(message);
+                statusEl.textContent = " Jarvis connected";
+            } catch (error) {
+                const message = " Connection error. Make sure Jarvis server is running.";
+                addMessage("assistant", message);
+                speakText(message);
+                statusEl.textContent = " Server offline";
+            } finally {
+                sendButton.disabled = false;
+                voiceInputButton.disabled = false;
+                input.focus();
+            }
+        }
+
+        function setupVoiceRecognition() {
+            if (!SpeechRecognition) {
+                voiceInputButton.disabled = true;
+                voiceInputButton.title = "Speech recognition not supported in this browser";
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = "en-US";
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                setListeningState(true);
+            };
+
+            recognition.onend = () => {
+                setListeningState(false);
+                if (interactionMode === "voice" && !window.speechSynthesis.speaking) {
+                    setTimeout(() => {
+                        if (!listening && interactionMode === "voice" && !window.speechSynthesis.speaking) {
+                            try { recognition.start(); } catch (e) {}
+                        }
+                    }, 500);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                setListeningState(false);
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.trim();
+                if (!transcript) {
+                    return;
+                }
+                input.value = transcript;
+                statusEl.textContent = `Heard: ${transcript}`;
+                submitCommand(transcript);
+            };
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result || ""));
+                reader.onerror = () => reject(new Error("Unable to read file."));
+                reader.readAsText(file);
+            });
+        }
+
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    try {
+                        const base64String = reader.result.split(',')[1]; // Remove data URL prefix
+                        resolve(base64String);
+                    } catch (e) {
+                        reject(e);
+                    }
+                };
+                reader.onerror = () => reject(new Error("Unable to read file."));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function isBinaryFile(filename) {
+            const binaryExtensions = [
+                'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+                'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff'
+            ];
+            const ext = filename.split('.').pop().toLowerCase();
+            return binaryExtensions.includes(ext);
+        }
+
+        function checkHealth() {
+            // Placeholder for health check
+            statusEl.textContent = "Jarvis connected";
+        }
+
+        function hideCadPanel() {
+            document.getElementById("cadPanel").classList.remove("visible");
+        }
+
+        function toggleCamera() {
+            cameraEnabled = !cameraEnabled;
+            cameraButton.textContent = cameraEnabled ? "Camera On" : "Camera Off";
+            cameraButton.classList.toggle("active", cameraEnabled);
+        }
+
+        function updateLiveTime() {
+            const now = new Date();
+            liveTime.textContent = now.toLocaleString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                year: "numeric",
+                month: "short",
+                day: "2-digit",
+            });
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const command = input.value.trim();
+            if (!command) {
+                return;
+            }
+            submitCommand(command);
+        });
+
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                form.requestSubmit();
+            }
+        });
+
+        fileInput.addEventListener("change", () => {
+            selectedFile = fileInput.files[0] || null;
+            if (!selectedFile) {
+                fileMeta.textContent = "No file selected.";
+                return;
+            }
+            fileMeta.textContent = `${selectedFile.name} - ${selectedFile.size} bytes`;
+            input.focus();
+        });
+
+        cameraButton.addEventListener("click", () => {
+            toggleCamera();
+        });
+
+        voiceInputButton.addEventListener("click", () => {
+            if (!recognition) {
+                return;
+            }
+
+            if (listening) {
+                recognition.stop();
+                return;
+            }
+
+            recognition.start();
+        });
+
+        document.getElementById("closeCadButton").addEventListener("click", () => {
+            hideCadPanel();
+        });
+
+        document.getElementById("closeCadStlButton").addEventListener("click", () => {
+            document.getElementById("cadStlPanel").classList.remove("visible");
+            if (typeof window.__disposeCadStlPreview === "function") {
+                window.__disposeCadStlPreview();
+            }
+        });
+
+        setInteractionMode("text");
+        setupVoiceRecognition();
+        updateLiveTime();
+        setInterval(updateLiveTime, 1000);
+        checkHealth();
+        input.focus();
+    </script>
+    <script type="module">
+        import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+        import { FilesetResolver, HandLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+        const MP_WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
+        const HAND_MODEL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+
+        const panel = document.getElementById("hand3dPanel");
+        const openBtn = document.getElementById("hand3dButton");
+        const startBtn = document.getElementById("hand3dStart");
+        const stopBtn = document.getElementById("hand3dStop");
+        const closeLoopBtn = document.getElementById("hand3dCloseLoop");
+        const clearBtn = document.getElementById("hand3dClear");
+        const closeBtn = document.getElementById("hand3dClose");
+        const hand3dStatusEl = document.getElementById("hand3dStatus");
+        const video = document.getElementById("handVideo");
+        const canvas = document.getElementById("handCanvas");
+        const view = document.getElementById("hand3dView");
+
+        let stream = null;
+        let handLandmarker = null;
+        let raf = 0;
+        let loopActive = false;
+
+        /** Draw hand: pinch edge detection */
+        let drawPinchWas = false;
+        let currentLine = null;
+        let currentStartPoint = null;
+
+        /** Nav hand: palm orbit + pinch zoom */
+        let prevNavPalm = null;
+        let navScale = 1;
+        let targetNavScale = 1;
+
+        const smoothedLocal = new THREE.Vector3(0, 0, 0);
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(50, 16 / 10, 0.1, 100);
+        camera.position.set(0, 0.2, 6);
+
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setClearColor(0x000000, 0);
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        const hemi = new THREE.HemisphereLight(0xaaccff, 0x223344, 1.1);
+        scene.add(hemi);
+        const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+        dir.position.set(3, 8, 5);
+        scene.add(dir);
+
+        const sketchGroup = new THREE.Group();
+        scene.add(sketchGroup);
+
+        const grid = new THREE.GridHelper(14, 14, 0x58a6ff, 0x1a3344);
+        grid.position.y = -1.6;
+        sketchGroup.add(grid);
+
+        const cursorGeom = new THREE.SphereGeometry(0.06, 16, 16);
+        const cursorMat = new THREE.MeshStandardMaterial({ color: 0x63e6be, emissive: 0x114433, metalness: 0.2, roughness: 0.4 });
+        const cursorMesh = new THREE.Mesh(cursorGeom, cursorMat);
+        sketchGroup.add(cursorMesh);
+
+        const pointMat = new THREE.MeshStandardMaterial({ color: 0x58a6ff, emissive: 0x112244, metalness: 0.15, roughness: 0.45 });
+        const lineMat = new THREE.LineBasicMaterial({ color: 0x63e6be, transparent: true, opacity: 0.95 });
+
+        /** Sketch vertices in sketchGroup local space */
+        const sketchPoints = [];
+        const placed = [];
+
+        function resize() {
+            const w = view.clientWidth;
+            const h = view.clientHeight;
+            if (w < 2 || h < 2) {
+                return;
+            }
+            renderer.setSize(w, h, false);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+        }
+
+        window.addEventListener("resize", resize);
+
+        function setStatus(text) {
+            statusEl.textContent = text;
+        }
+
+        function handLabel(landmarkerResult, index) {
+            const cat = landmarkerResult.handednesses?.[index]?.[0];
+            return cat?.categoryName || cat?.displayName || "";
+        }
+
+        function pickHands(landmarkerResult) {
+            const lm = landmarkerResult.landmarks;
+            const n = lm?.length ?? 0;
+            let drawLandmarks = null;
+            let navLandmarks = null;
+            for (let i = 0; i < n; i++) {
+                const label = handLabel(landmarkerResult, i);
+                if (label === "Right") {
+                    drawLandmarks = lm[i];
+                }
+                if (label === "Left") {
+                    navLandmarks = lm[i];
+                }
+            }
+            if (!drawLandmarks && n > 0) {
+                drawLandmarks = lm[0];
+            }
+            if (!navLandmarks && n > 1) {
+                navLandmarks = lm[1];
+            }
+            return { drawLandmarks, navLandmarks };
+        }
+
+        function landmarkIndexTipWorld(lm) {
+            const tip = lm[8];
+            const mirrorX = 1 - tip.x;
+            const wx = (mirrorX - 0.5) * 9;
+            const wy = (0.5 - tip.y) * 6;
+            const wz = 1.2 + (tip.z || 0) * 5;
+            return new THREE.Vector3(wx, wy, wz);
+        }
+
+        function pinchDist(lm) {
+            const a = lm[4];
+            const b = lm[8];
+            return Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0));
+        }
+
+        function palmCenter(lm) {
+            const ids = [0, 5, 9, 13, 17];
+            let x = 0;
+            let y = 0;
+            let z = 0;
+            for (const id of ids) {
+                const p = lm[id];
+                x += p.x;
+                y += p.y;
+                z += p.z || 0;
+            }
+            const k = ids.length;
+            return { x: x / k, y: y / k, z: z / k };
+        }
+
+        function worldToSketch(worldVec) {
+            sketchGroup.updateMatrixWorld(true);
+            return sketchGroup.worldToLocal(worldVec.clone());
+        }
+
+        function addPointAndSegment(localPos) {
+            const dot = new THREE.Mesh(new THREE.SphereGeometry(0.055, 14, 14), pointMat.clone());
+            dot.position.copy(localPos);
+            sketchGroup.add(dot);
+            placed.push(dot);
+
+            sketchPoints.push(localPos.clone());
+
+            if (sketchPoints.length >= 2) {
+                const a = sketchPoints[sketchPoints.length - 2];
+                const b = sketchPoints[sketchPoints.length - 1];
+                const geom = new THREE.BufferGeometry().setFromPoints([a.clone(), b.clone()]);
+                const seg = new THREE.Line(geom, lineMat.clone());
+                sketchGroup.add(seg);
+                placed.push(seg);
+            }
+        }
+
+        function startLiveSegment(startPos) {
+            const hasPreviousPoint = sketchPoints.length > 0;
+            currentStartPoint = hasPreviousPoint ? sketchPoints[sketchPoints.length - 1].clone() : startPos.clone();
+            const geom = new THREE.BufferGeometry().setFromPoints([currentStartPoint.clone(), currentStartPoint.clone()]);
+            currentLine = new THREE.Line(geom, lineMat.clone());
+            sketchGroup.add(currentLine);
+            placed.push(currentLine);
+
+            if (!hasPreviousPoint) {
+                const startDot = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 12), pointMat.clone());
+                startDot.position.copy(currentStartPoint);
+                sketchGroup.add(startDot);
+                placed.push(startDot);
+            }
+        }
+
+        function updateLiveSegment(endPos) {
+            if (!currentLine || !currentStartPoint) {
+                return;
+            }
+            currentLine.geometry.setFromPoints([currentStartPoint.clone(), endPos.clone()]);
+        }
+
+        function finalizeLiveSegment(endPos) {
+            if (!currentLine || !currentStartPoint) {
+                return;
+            }
+            updateLiveSegment(endPos);
+            if (sketchPoints.length === 0) {
+                sketchPoints.push(currentStartPoint.clone());
+            }
+            sketchPoints.push(endPos.clone());
+            const endDot = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 12), pointMat.clone());
+            endDot.position.copy(endPos);
+            sketchGroup.add(endDot);
+            placed.push(endDot);
+            currentLine = null;
+            currentStartPoint = null;
+        }
+
+        function closeLoop() {
+            if (sketchPoints.length < 3) {
+                return;
+            }
+            const a = sketchPoints[sketchPoints.length - 1];
+            const b = sketchPoints[0];
+            const geom = new THREE.BufferGeometry().setFromPoints([a.clone(), b.clone()]);
+            const seg = new THREE.Line(geom, lineMat.clone());
+            sketchGroup.add(seg);
+            placed.push(seg);
+        }
+
+        function clearSketch() {
+            for (const obj of placed) {
+                sketchGroup.remove(obj);
+                obj.geometry?.dispose?.();
+                if (Array.isArray(obj.material)) {
+                    obj.material.forEach((m) => m.dispose?.());
+                } else {
+                    obj.material?.dispose?.();
+                }
+            }
+            placed.length = 0;
+            sketchPoints.length = 0;
+            if (currentLine) {
+                sketchGroup.remove(currentLine);
+                currentLine.geometry?.dispose?.();
+                currentLine = null;
+                currentStartPoint = null;
+            }
+        }
+
+        async function createHandLandmarker() {
+            const vision = await FilesetResolver.forVisionTasks(MP_WASM);
+            try {
+                return await HandLandmarker.createFromOptions(vision, {
+                    baseOptions: { modelAssetPath: HAND_MODEL, delegate: "GPU" },
+                    runningMode: "VIDEO",
+                    numHands: 2,
+                });
+            } catch {
+                return HandLandmarker.createFromOptions(vision, {
+                    baseOptions: { modelAssetPath: HAND_MODEL, delegate: "CPU" },
+                    runningMode: "VIDEO",
+                    numHands: 2,
+                });
+            }
+        }
+
+        function tick() {
+            if (!loopActive) {
+                return;
+            }
+            raf = requestAnimationFrame(tick);
+            resize();
+            if (handLandmarker && video.readyState >= 2) {
+                const results = handLandmarker.detectForVideo(video, performance.now());
+                const { drawLandmarks, navLandmarks } = pickHands(results);
+
+                if (drawLandmarks) {
+                    const worldTip = landmarkIndexTipWorld(drawLandmarks);
+                    const localTip = worldToSketch(worldTip);
+                    smoothedLocal.lerp(localTip, 0.42);
+                    cursorMesh.position.copy(smoothedLocal);
+
+                    const pd = pinchDist(drawLandmarks);
+                    const pinching = pd < 0.056;
+                    if (pinching) {
+                        if (!drawPinchWas) {
+                            const startPoint = smoothedLocal.clone();
+                            startLiveSegment(startPoint);
+                        }
+                        updateLiveSegment(smoothedLocal.clone());
+                    } else if (drawPinchWas) {
+                        if (currentLine && currentStartPoint) {
+                            finalizeLiveSegment(smoothedLocal.clone());
+                        }
+                    }
+                    drawPinchWas = pinching;
+                }
+
+                if (navLandmarks) {
+                    const pdNav = pinchDist(navLandmarks);
+                    const openPalm = pdNav > 0.075;
+                    const palm = palmCenter(navLandmarks);
+                    const mirrorPx = 1 - palm.x;
+
+                    let palmMoving = false;
+                    if (openPalm && prevNavPalm) {
+                        const dx = mirrorPx - prevNavPalm.mx;
+                        const dy = palm.y - prevNavPalm.my;
+                        const dead = 0.0012;
+                        palmMoving = Math.abs(dx) > dead || Math.abs(dy) > dead;
+                        if (palmMoving) {
+                            sketchGroup.rotation.y += dx * 4.2;
+                            sketchGroup.rotation.x += dy * 3.2;
+                            sketchGroup.rotation.x = THREE.MathUtils.clamp(sketchGroup.rotation.x, -1.1, 1.1);
+                        }
+                    }
+                    if (openPalm) {
+                        prevNavPalm = { mx: mirrorPx, my: palm.y };
+                    } else {
+                        prevNavPalm = null;
+                    }
+
+                    if (!palmMoving) {
+                        targetNavScale = THREE.MathUtils.clamp(0.45 + pdNav * 5.5, 0.4, 3.2);
+                    }
+                    navScale += (targetNavScale - navScale) * 0.12;
+                    sketchGroup.scale.setScalar(navScale);
+                } else {
+                    prevNavPalm = null;
+                }
+            }
+            renderer.render(scene, camera);
+        }
+
+        openBtn.addEventListener("click", () => {
+            panel.classList.toggle("visible");
+            resize();
+        });
+
+        closeBtn.addEventListener("click", () => {
+            panel.classList.remove("visible");
+        });
+
+        startBtn.addEventListener("click", async () => {
+            startBtn.disabled = true;
+            setStatus("Starting camera…");
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+                video.srcObject = stream;
+                await video.play();
+                setStatus("Loading hand model…");
+                handLandmarker = await createHandLandmarker();
+                stopBtn.disabled = false;
+                closeLoopBtn.disabled = false;
+                clearBtn.disabled = false;
+                setStatus("Right pinch + drag to draw. Left open palm rotates, pinch zooms.");
+                cancelAnimationFrame(raf);
+                loopActive = true;
+                tick();
+            } catch (e) {
+                setStatus(`Could not start: ${e.message || e}`);
+                startBtn.disabled = false;
+            }
+        });
+
+        stopBtn.addEventListener("click", () => {
+            loopActive = false;
+            cancelAnimationFrame(raf);
+            if (stream) {
+                stream.getTracks().forEach((t) => t.stop());
+                stream = null;
+            }
+            video.srcObject = null;
+            handLandmarker = null;
+            drawPinchWas = false;
+            if (currentLine) {
+                sketchGroup.remove(currentLine);
+                currentLine.geometry?.dispose?.();
+                currentLine = null;
+                currentStartPoint = null;
+            }
+            prevNavPalm = null;
+            sketchGroup.rotation.set(0, 0, 0);
+            navScale = 1;
+            targetNavScale = 1;
+            sketchGroup.scale.setScalar(1);
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            closeLoopBtn.disabled = true;
+            clearBtn.disabled = true;
+            setStatus("Stopped.");
+        });
+
+        closeLoopBtn.addEventListener("click", () => {
+            closeLoop();
+        });
+
+        clearBtn.addEventListener("click", () => {
+            clearSketch();
+        });
+    </script>
+    <script type="module">
+        import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+        import { STLLoader } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/STLLoader.js";
+        import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js";
+
+        let cadRaf = 0;
+        let cadRenderer = null;
+        let cadScene = null;
+        let cadCamera = null;
+        let cadControls = null;
+        let cadMesh = null;
+
+        function disposeCad() {
+            cancelAnimationFrame(cadRaf);
+            cadRaf = 0;
+            if (cadControls) {
+                cadControls.dispose();
+                cadControls = null;
+            }
+            if (cadMesh) {
+                cadMesh.geometry?.dispose();
+                if (Array.isArray(cadMesh.material)) {
+                    cadMesh.material.forEach((m) => m.dispose?.());
+                } else {
+                    cadMesh.material?.dispose?.();
+                }
+                cadMesh = null;
+            }
+            if (cadRenderer) {
+                cadRenderer.dispose();
+                cadRenderer = null;
+            }
+            cadScene = null;
+            cadCamera = null;
+        }
+
+        function cadAnimate() {
+            if (!cadRenderer || !cadScene || !cadCamera) {
+                return;
+            }
+            cadRaf = requestAnimationFrame(cadAnimate);
+            if (cadControls) {
+                cadControls.update();
+            }
+            cadRenderer.render(cadScene, cadCamera);
+        }
+
+        function resizeCadCanvas() {
+            const view = document.getElementById("cadStlView");
+            const canvas = document.getElementById("cadStlCanvas");
+            if (!view || !canvas || !cadRenderer || !cadCamera) {
+                return;
+            }
+            const w = view.clientWidth;
+            const h = view.clientHeight;
+            if (w < 2 || h < 2) {
+                return;
+            }
+            cadRenderer.setSize(w, h, false);
+            cadRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+            cadCamera.aspect = w / h;
+            cadCamera.updateProjectionMatrix();
+        }
+
+        window.__disposeCadStlPreview = function () {
+            disposeCad();
+        };
+
+        window.__loadCadStlPreview = async function (design) {
+            const canvas = document.getElementById("cadStlCanvas");
+            const statusEl = document.getElementById("cadStlStatus");
+            const dl = document.getElementById("cadStlDownload");
+            disposeCad();
+
+            if (!design || !design.stl_preview_id) {
+                if (statusEl) {
+                    statusEl.textContent = (design && design.stl_error) || "STL preview unavailable.";
+                }
+                if (dl) {
+                    dl.style.display = "none";
+                }
+                return;
+            }
+
+            const stlUrl = `/api/cad/stl?id=${encodeURIComponent(design.stl_preview_id)}`;
+            if (statusEl) {
+                statusEl.textContent = "Loading mesh…";
+            }
+            if (dl) {
+                dl.href = stlUrl;
+                dl.setAttribute("download", design.stl_filename || "model.stl");
+                dl.style.display = "inline-block";
+            }
+
+            try {
+                const res = await fetch(stlUrl);
+                if (!res.ok) {
+                    throw new Error("Server could not return STL");
+                }
+                const buf = await res.arrayBuffer();
+                const loader = new STLLoader();
+                const geometry = loader.parse(buf);
+                geometry.computeVertexNormals();
+                geometry.center();
+
+                const mat = new THREE.MeshStandardMaterial({
+                    color: 0x63e6be,
+                    metalness: 0.25,
+                    roughness: 0.4,
+                });
+                cadMesh = new THREE.Mesh(geometry, mat);
+
+                cadScene = new THREE.Scene();
+                cadScene.background = new THREE.Color(0x020810);
+                const hemi = new THREE.HemisphereLight(0xaaccff, 0x334455, 1);
+                cadScene.add(hemi);
+                const dir = new THREE.DirectionalLight(0xffffff, 0.85);
+                dir.position.set(5, 10, 7);
+                cadScene.add(dir);
+                cadScene.add(cadMesh);
+
+                const box = new THREE.Box3().setFromObject(cadMesh);
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+
+                cadCamera = new THREE.PerspectiveCamera(45, 16 / 10, 0.01, 5000);
+                const dist = maxDim * 2.4;
+                cadCamera.position.set(dist * 0.65, dist * 0.42, dist * 0.85);
+                cadCamera.lookAt(0, 0, 0);
+
+                cadRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+                cadRenderer.outputColorSpace = THREE.SRGBColorSpace;
+                resizeCadCanvas();
+
+                cadControls = new OrbitControls(cadCamera, cadRenderer.domElement);
+                cadControls.enableDamping = true;
+                cadControls.target.set(0, 0, 0);
+
+                cadAnimate();
+                if (statusEl) {
+                    statusEl.textContent = "Drag to orbit, scroll to zoom.";
+                }
+            } catch (e) {
+                if (statusEl) {
+                    statusEl.textContent = `Preview error: ${e.message || e}`;
+                }
+                if (dl) {
+                    dl.style.display = "none";
+                }
+            }
+        };
+
+        window.addEventListener("resize", resizeCadCanvas);
+    </script>
+</body>
+</html>

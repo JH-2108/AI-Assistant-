@@ -1,0 +1,65 @@
+AI Assistant Setup and Usage Guide
+
+Requirements
+------------
+1. Laptop / PC:
+   - Windows 10 or later is recommended.
+   - At least 8 GB of RAM.
+   - A webcam for camera and hand-tracking features.
+   - Internet access for downloading dependencies and using web-based APIs.
+
+2. Software:
+   - Python 3.10+ installed and added to PATH.
+   - A modern web browser such as Chrome, Edge, or Firefox.
+   - Git is optional but useful if cloning the repository.
+
+3. Python packages:
+   - Install required packages from `requirements_automation.txt` if present.
+   - Common packages likely include `flask`, `openai`, `numpy`, `requests`, and any others used by the assistant.
+
+4. Browser permissions:
+   - Allow camera access when prompted.
+   - Enable microphone access for voice input features.
+
+Usage Steps
+-----------
+1. Open the project folder on your laptop.
+   - Example path: `c:\Users\Lenovo\Desktop\AI_Assistant`
+
+2. Install Python dependencies:
+   - Open a terminal or PowerShell in the folder.
+   - Run: `python -m pip install -r requirements_automation.txt`
+   - If there is no `requirements_automation.txt`, inspect the project files and install packages manually.
+
+3. Start the local server or script:
+   - Identify the main launch script, such as `Assistant.py` or `web_app.py`.
+   - Run: `python Assistant.py` or `python web_app.py`
+   - Watch the terminal for startup messages.
+
+4. Open the app in your browser:
+   - If the app opens on a local web server, use the address shown in the terminal, e.g. `http://127.0.0.1:5000`.
+   - If the app is a local HTML page, open `index.html` directly in the browser.
+
+5. Enable voice and camera features:
+   - Press the microphone button to start voice mode.
+   - Allow microphone access in the browser.
+   - Press the camera button to enable camera input.
+   - Allow camera access in the browser.
+
+6. Use the AI assistant:
+   - Type a command in the chat input and press Enter or click Send.
+   - In voice mode, click the mic button and speak.
+   - For hand-tracking features, open the Hand 3D panel and follow the on-screen instructions.
+
+Notes
+-----
+- If microphone input is not working, check browser permissions and make sure your browser supports Web Speech API.
+- If camera or hand-tracking is not working, check that the webcam is enabled and the browser supports `getUserMedia`.
+- Keep `index.html` and the related scripts in the same folder so the app can load assets correctly.
+
+Troubleshooting
+---------------
+- "Jarvis connected" means the assistant is running and ready.
+- "Listening for speech..." means voice capture is active.
+- If the UI looks wrong after enabling camera, refresh the page or restart the app.
+- For file uploads, make sure supported file formats are selected and the file is not corrupted.
